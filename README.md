@@ -1,6 +1,8 @@
+
 <div align="center">
 
 # 🛡️ FRAUD SHIELD
+
 ### Understand the risk before you send the money.
 
 **An explainable fraud-awareness prototype for UPI payments and suspicious phone calls.**
@@ -10,11 +12,10 @@
 [![Machine Learning](https://img.shields.io/badge/ML-Scikit--learn-F7931E?logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
 [![Deployment](https://img.shields.io/badge/Hosting-Railway-7056BF)](https://railway.com/)
 
-**[Try the live app](https://YOUR-RAILWAY-DOMAIN.up.railway.app)** · **[Explore features](#explore-the-dashboard)** · **[Run locally](#run-it-on-your-machine)**
+**[🚀 Try the Live App](https://fraud-shield-production-223d6c6f.up.railway.app/)** · **[Explore Features](#explore-the-dashboard)** · **[Run Locally](#run-it-on-your-machine)**
 
 </div>
 
-> **Demo link:** https://fraud-shield-production-223d6c6f.up.railway.app/
 
 ---
 
