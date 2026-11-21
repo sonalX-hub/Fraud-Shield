@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Demo — Fraud Shield</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    /* ---- Header badges ---- */
+    .demo-badges {
+      display: flex; gap: 8px; margin: 14px 0 0; flex-wrap: wrap;
+    }
+    .demo-badge {
+      font-size: 11px; padding: 4px 12px; border-radius: var(--radius-pill);
+      font-weight: 600; border: 1px solid var(--border); background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+    .demo-badge.live { border-color: var(--success); color: var(--success); }
+    .demo-badge.demo-mode { border-color: var(--warning); color: var(--warning); }
+
+    /* ---- Section ---- */
+    .demo-section { margin-bottom: 40px; }
+    .demo-section h2 {
+      font-family: var(--font-serif);
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+    .demo-section .sec-sub {
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      max-width: 680px;
+    }
+
+    /* ---- Counterfactual grid ---- */
+    .cf-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 720px) { .cf-grid { grid-template-columns: 1fr; } }
+
+    .cf-card {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      border: 1px solid var(--border);
+      transition: border-color var(--transition);
+    }
+    .cf-card:hover { border-color: var(--border-hover); }
+    .cf-card.safe { border-color: rgba(91,185,139,0.3); }
+    .cf-card.scam { border-color: rgba(224,96,96,0.3); }
+
+    .cf-label {
+      font-size: 10.5px; letter-spacing: 1.1px; font-weight: 700;
+      margin-bottom: 12px; color: var(--text-tertiary); text-transform: uppercase;
+    }
+    .tx-block {
+      background: var(--bg-primary); border-radius: var(--radius-sm);
+      padding: 12px 14px; margin-bottom: 12px; border: 1px solid var(--border);
+    }
+    .tx-line {
+      display: flex; justify-content: space-between; font-size: 12.5px; padding: 3px 0;
+    }
+    .tx-line span:first-child { color: var(--text-tertiary); }
+    .tx-line span:last-child { color: var(--text-primary); font-weight: 600; }
+
+    .ctx-line {
+      font-size: 12.5px; padding: 10px 14px; border-radius: var(--radius-sm);
+      margin-bottom: 12px; line-height: 1.5;
+    }
+    .ctx-none {
+      background: var(--bg-primary); color: var(--text-tertiary);
+      border: 1px dashed var(--border);
+    }
+    .ctx-scam {
+      background: rgba(217,119,87,0.08); color: var(--accent);
+      border: 1px solid rgba(217,119,87,0.2);
+    }
+
+    .cf-scores { border-top: 1px solid var(--border); padding-top: 12px; }
+    .sc-line {
+      display: flex; justify-content: space-between; font-size: 12.5px; padding: 3.5px 0;
+    }
+    .sc-line span:first-child { color: var(--text-secondary); }
+    .sc-line span:last-child { font-family: var(--font-mono); color: var(--text-primary); }
+    .sc-line.big {
+      font-size: 15px; font-weight: 700; padding-top: 10px; margin-top: 6px;
+      border-top: 1px solid var(--border);
+    }
+    .sc-line.big span:last-child { font-size: 19px; }
+    .cf-card.safe .sc-line.big span:last-child { color: var(--success); }
+    .cf-card.scam .sc-line.big span:last-child { color: var(--danger); }
+
+    .cf-verdict {
+      margin-top: 14px; text-align: center; padding: 12px;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 700;
+      letter-spacing: 0.3px; border: 1px solid;
+    }
+    .vd-APPROVE { background: var(--success-bg); color: var(--success); border-color: var(--success-border); }
+    .vd-VERIFY  { background: rgba(96,165,250,0.10); color: #60a5fa; border-color: rgba(96,165,250,0.25); }
+    .vd-WARN    { background: var(--warning-bg); color: var(--warning); border-color: var(--warning-border); }
+    .vd-BLOCK   { background: var(--danger-bg); color: var(--danger); border-color: var(--danger-border); }
+    .vd-sub { font-size: 11px; font-weight: 500; opacity: .85; margin-top: 4px; letter-spacing: 0; }
+
+    .punch {
+      text-align: center; margin-top: 20px; padding: 18px 20px;
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      font-size: 15px; color: var(--text-primary); font-weight: 600;
+    }
+    .punch small {
+      display: block; font-weight: 400; color: var(--text-secondary);
+      font-size: 12.5px; margin-top: 6px; line-height: 1.6;
+    }
+
+    /* ---- Simulation ---- */
+    .sim-btn {
+      width: 100%; padding: 16px; border: none; border-radius: var(--radius-md);
+      cursor: pointer; font-size: 15px; font-weight: 700; letter-spacing: 0.3px;
+      font-family: var(--font-sans);
+      background: var(--accent); color: #fff;
+      transition: all var(--transition);
+    }
+    .sim-btn:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .sim-btn:active { transform: translateY(0); }
+    .sim-btn:disabled { opacity: .5; cursor: default; transform: none; }
+
+    .steps { margin-top: 20px; }
+    .step {
+      border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 16px 18px; margin-bottom: 10px;
+      background: var(--bg-primary); opacity: .35;
+      transition: opacity 0.35s ease, border-color 0.35s ease, background 0.35s ease;
+    }
+    .step.active {
+      opacity: 1; border-color: var(--accent);
+      background: var(--bg-secondary);
+    }
+    .step.done { opacity: 1; }
+    .step-head {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13.5px; font-weight: 700; color: var(--text-primary); gap: 10px;
+    }
+    .step-num {
+      font-size: 10.5px; color: var(--text-tertiary);
+      font-family: var(--font-mono); flex-shrink: 0;
+    }
+    .step-body {
+      margin-top: 10px; font-size: 12.5px; color: var(--text-secondary);
+      line-height: 1.6; display: none;
+    }
+    .step.active .step-body, .step.done .step-body { display: block; }
+
+    .phone {
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 16px; text-align: center;
+    }
+    .phone .num { font-size: 19px; font-weight: 700; color: var(--text-primary); letter-spacing: 1px; }
+    .phone .who { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+    .ring { display: inline-block; animation: ring 1s infinite; font-size: 22px; }
+    @keyframes ring { 0%,100%{transform:rotate(-11deg)} 50%{transform:rotate(11deg)} }
+
+    .flag {
+      display: block; font-size: 12.5px; color: var(--accent); padding: 5px 0;
+      animation: slidein 0.35s ease;
+    }
+    @keyframes slidein { from{opacity:0;transform:translateX(-9px)} to{opacity:1;transform:none} }
+    .flag .pts {
+      color: var(--danger); font-weight: 700; font-family: var(--font-mono);
+    }
+
+    .transcript {
+      background: var(--bg-primary); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px;
+      font-size: 12px; color: var(--text-secondary); line-height: 1.65;
+      margin-top: 10px; white-space: pre-wrap;
+    }
+    .meter { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+    .meter-bar {
+      flex: 1; height: 10px; background: var(--bg-primary);
+      border: 1px solid var(--border); border-radius: var(--radius-pill); overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%; width: 0; border-radius: var(--radius-pill);
+      transition: width 0.8s ease;
+    }
+    .mf-voice { background: linear-gradient(90deg, var(--accent), #E8A080); }
+    .mf-txn   { background: linear-gradient(90deg, #5B8FD4, #8AB4E8); }
+    .mf-final { background: linear-gradient(90deg, var(--danger), #E89090); }
+    .meter-num {
+      font-family: var(--font-mono); font-weight: 700; font-size: 13px;
+      min-width: 58px; text-align: right; color: var(--text-primary);
+    }
+
+    .fuse-line {
+      display: flex; justify-content: space-between; font-size: 13px;
+      padding: 4px 0; color: var(--text-secondary);
+    }
+    .fuse-line span:last-child { font-family: var(--font-mono); color: var(--text-primary); }
+    .fuse-line.total {
+      border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px;
+      font-weight: 700; color: var(--text-primary);
+    }
+    .fuse-line.total span:last-child { color: var(--danger); font-size: 16px; }
+
+    .alert-final {
+      border-radius: var(--radius-lg); padding: 18px; text-align: center;
+      margin-top: 4px; background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+    }
+    .alert-final .big {
+      font-size: 18px; font-weight: 800; color: var(--danger);
+      letter-spacing: 0.3px;
+    }
+    .alert-final .why {
+      font-size: 12.5px; color: var(--text-primary); margin-top: 10px; line-height: 1.65;
+    }
+
+    .choice { display: flex; gap: 10px; margin-top: 14px; }
+    .choice button {
+      flex: 1; padding: 12px; border: none; border-radius: var(--radius-sm);
+      cursor: pointer; font-size: 13px; font-weight: 600; font-family: var(--font-sans);
+      transition: all var(--transition);
+    }
+    .btn-stop { background: var(--danger); color: #fff; }
+    .btn-stop:hover { background: #D04D4D; }
+    .btn-go { background: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn-go:hover { background: #3D3D3D; }
+
+    .chosen {
+      text-align: center; font-size: 12.5px; color: var(--success);
+      margin-top: 12px; display: none;
+    }
+
+    .errbox {
+      display: none; background: var(--danger-bg); border: 1px solid var(--danger-border);
+      border-radius: var(--radius-sm); padding: 14px 16px;
+      font-size: 12.5px; color: var(--danger); margin-top: 14px; line-height: 1.55;
+    }
+    .loading { color: var(--accent); font-size: 12.5px; }
+  </style>
+<link rel="stylesheet" href="/shield-ui.css" />
+  <script src="/common-ui.js" defer></script>
+</head>
+<body>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar">
+   <div class="sidebar-header">
+     <a class="sidebar-brand" href="/" aria-label="Fraud Shield home">
+       <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg><span class="brand-dot"></span></span>
+       <span class="brand-copy"><span class="brand-line">Fraud Shield <span class="brand-upi">UPI</span></span><span class="brand-subtitle">Explainable UPI detection</span></span>
+     </a>
+     <div class="system-chip"><span class="status-dot"></span><span id="healthStatus">CHECKING SYSTEM</span><span class="system-node">NODE · LOCAL</span></div>
+   </div>
+   <nav class="sidebar-nav" aria-label="Main navigation"><a class="nav-item" href="/"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>Payment Shield</span></a>
+<a class="nav-item active" href="/demo.html" aria-current="page" data-active="true"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg></span><span>Live Demo</span><span class="nav-tail nav-glow"></span></a>
+<a class="nav-item" href="/stats.html"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span><span>Performance</span></a>
+<a class="nav-item" href="/review.html"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h1m4 0h1M9 11h1m4 0h1M9 15h1m4 0h1M10 21v-3h4v3"/></svg></span><span>Bank Review</span><span class="nav-tail nav-tag orange" id="auditNavCount">AUDIT</span></a></nav>
+   <div class="sidebar-footer"><div class="footer-top"><span><span class="footer-shield">◇</span> Fraud Shield</span><span class="foot-version">v2.4</span></div><div class="footer-sub">Explainable UPI Fraud Detection</div></div>
+ </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <main class="main-content">
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">☰</button>
+    <div class="topbar"><div class="topbar-inner"><div class="gateway-label">GATEWAY NODE: <span>LOCAL-UPI-RISK-ENGINE</span></div><div class="gateway-stats"><span class="gateway-chip"><i class="status-light cyan"></i> Latency: <b id="gatewayLatency">—</b></span><span class="gateway-chip"><i class="status-light green"></i> Multi-modal model: <b>Active</b></span><a class="gateway-chip" href="/stats.html"><i class="status-light cyan"></i> Detection rate: <b>See metrics</b></a></div></div></div>
+
+    <div class="content-wrap wide modern-content">
+
+      <div class="page-header"><div class="page-kicker"><span class="mini-spark">✦</span> FRAUD SHIELD / LIVE DEMO</div>
+        <h1>UPI Guardian — Live Demo <span class="heading-badge">REAL-TIME SIMULATION</span></h1>
+        <p class="page-description">
+          Real-time AI fraud protection — voice and payment, analysed together
+        </p>
+        <div class="demo-badges">
+          <span class="demo-badge live">System active</span>
+          <span class="demo-badge demo-mode">DEMO MODE</span>
+          <span class="demo-badge" id="asrBadge">Checking speech engine…</span>
+        </div>
+      </div>
+
+      <!-- ================= COUNTERFACTUAL ================= -->
+      <div class="demo-section">
+        <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="4" height="8" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg></span> Why context matters</h2>
+        <div class="sec-sub">
+          The identical payment, judged twice. Same amount, same payee, same device, same city,
+          same moment. The only difference is whether a scam call was happening at the time.
+          Both scores below come from the live risk engine — nothing here is staged.
+        </div>
+
+        <div class="cf-grid">
+          <div class="cf-card safe" id="cfA">
+            <div class="cf-label">Scenario A — no call</div>
+            <div class="tx-block" id="txA"></div>
+            <div class="ctx-line ctx-none">No call — the user initiated this payment themselves</div>
+            <div class="cf-scores" id="scoresA"><div class="loading">Scoring…</div></div>
+            <div class="cf-verdict vd-APPROVE" id="verdictA">…</div>
+          </div>
+
+          <div class="cf-card scam" id="cfB">
+            <div class="cf-label">Scenario B — same payment, scam call in progress</div>
+            <div class="tx-block" id="txB"></div>
+            <div class="ctx-line ctx-scam" id="ctxB">Scam call detected during payment</div>
+            <div class="cf-scores" id="scoresB"><div class="loading">Scoring…</div></div>
+            <div class="cf-verdict vd-BLOCK" id="verdictB">…</div>
+          </div>
+        </div>
+
+        <div class="punch" id="punch">
+          The transaction didn't change. The context did.
+          <small id="punchSub">Loading the comparison…</small>
+        </div>
+        <div class="errbox" id="cfError"></div>
+      </div>
+
+      <!-- ================= LIVE ATTACK SIMULATION ================= -->
+      <div class="demo-section">
+        <h2><span class="section-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-9 12h7l-1 8 10-12h-7l1-8Z"/></svg></span> Live attack simulation</h2>
+        <div class="sec-sub">
+          Runs the whole pipeline end to end — incoming call, speech-to-text, voice analysis,
+          the payment attempt, and the fusion decision. Every score is fetched from the backend
+          as the simulation runs.
+        </div>
+
+        <div class="card">
+          <button class="sim-btn" id="simBtn" onclick="runSimulation()">
+            Simulate Fraud Attack
+          </button>
+
+          <div class="steps" id="steps" style="display:none;">
+
+            <div class="step" id="s1">
+              <div class="step-head"><span>Incoming call</span><span class="step-num">STEP 1</span></div>
+              <div class="step-body">
+                <div class="phone">
+                  <div class="num">+91 98XXX XXXXX</div>
+                  <div class="who">Caller claims to represent your bank</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step" id="s2">
+              <div class="step-head"><span>Listening and transcribing</span><span class="step-num">STEP 2</span></div>
+              <div class="step-body">
+                <div id="s2status" class="loading">Capturing call audio…</div>
+                <div class="transcript" id="s2transcript" style="display:none;"></div>
+              </div>
+            </div>
+
+            <div class="step" id="s3">
+              <div class="step-head"><span>Voice analysis</span><span class="step-num">STEP 3</span></div>
+              <div class="step-body">
+                <div id="s3flags"></div>
+                <div class="meter">
+                  <div class="meter-bar"><div class="meter-fill mf-voice" id="s3bar"></div></div>
+                  <div class="meter-num" id="s3num">0/100</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step" id="s4">
+              <div class="step-head"><span>UPI payment attempted</span><span class="step-num">STEP 4</span></div>
+              <div class="step-body"><div class="tx-block" id="s4tx"></div></div>
+            </div>
+
+            <div class="step" id="s5">
+              <div class="step-head"><span>Transaction analysis</span><span class="step-num">STEP 5</span></div>
+              <div class="step-body">
+                <div id="s5flags"></div>
+                <div class="meter">
+                  <div class="meter-bar"><div class="meter-fill mf-txn" id="s5bar"></div></div>
+                  <div class="meter-num" id="s5num">0/100</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step" id="s6">
+              <div class="step-head"><span>Fusion engine</span><span class="step-num">STEP 6</span></div>
+              <div class="step-body">
+                <div class="fuse-line"><span>Transaction risk</span><span id="f1">—</span></div>
+                <div class="fuse-line"><span>Voice risk (weighted 60%)</span><span id="f2">—</span></div>
+                <div class="fuse-line total"><span>Combined risk</span><span id="f3">—</span></div>
+                <div class="meter">
+                  <div class="meter-bar"><div class="meter-fill mf-final" id="s6bar"></div></div>
+                  <div class="meter-num" id="s6num">0/100</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="step" id="s7">
+              <div class="step-head"><span>Action</span><span class="step-num">STEP 7</span></div>
+              <div class="step-body">
+                <div class="alert-final">
+                  <div class="big" id="s7title">HIGH FRAUD RISK</div>
+                  <div class="why" id="s7why"></div>
+                </div>
+                <div class="choice">
+                  <button class="btn-stop" onclick="simChoice('CANCELLED')">Cancel payment</button>
+                  <button class="btn-go" onclick="simChoice('CONFIRMED')">This is legitimate — proceed</button>
+                </div>
+                <div class="chosen" id="s7chosen"></div>
+              </div>
+            </div>
+
+          </div>
+          <div class="errbox" id="simError"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  }
+
+  // ---------------------------------------------------------------
+  // ONE transaction object, used by both counterfactual scenarios and
+  // by the simulation. Reusing the same object is the whole point:
+  // only the voice context differs between A and B.
+  // ---------------------------------------------------------------
+  const DEMO_TX = {
+    user_id: "U001",
+    amount: 2000,
+    payee: "newpayee_upi",
+    city: "Ranchi",
+    device: "DEV-A1",
+    timestamp: "2026-08-15 14:30:00"
+  };
+
+  const SCAM_TRANSCRIPT =
+    "Hello, I am calling from your bank. Your account is frozen due to suspicious activity. " +
+    "This is urgent, you must act now. Do not tell anyone about this call. Please share the " +
+    "OTP to verify and make a small refundable payment to unblock your account.";
+
+  // Audio used by the simulation. If it is missing or the speech engine
+  // is unavailable, the simulation falls back to the text above so the
+  // demo still completes rather than stalling in front of an audience.
+  const DEMO_AUDIO_URL = "/demo/scamcall.wav";
+
+  const VERDICT_TEXT = {
+    APPROVE: { label: "LOW RISK — APPROVE", sub: "Nothing unusual; payment proceeds normally" },
+    VERIFY:  { label: "SECONDARY VERIFICATION", sub: "Worth a second look before continuing" },
+    WARN:    { label: "MEDIUM RISK — CHECK", sub: "Worth a second look before continuing" },
+    BLOCK:   { label: "HIGH RISK — CONFIRM TO PROCEED", sub: "Strong warning; the user still decides" }
+  };
+
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = "block";
+  }
+
+  async function callAssess(tx, transcript) {
+    const res = await fetch("/assess", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...tx, transcript: transcript || "" })
+    });
+    if (!res.ok) throw new Error("Risk service returned " + res.status);
+    return res.json();
+  }
+
+  function renderTx(elId, tx) {
+    const rows = [
+      ["Amount", "₹" + Number(tx.amount).toLocaleString("en-IN")],
+      ["Payee", tx.payee],
+      ["Device", tx.device],
+      ["City", tx.city],
+      ["Time", tx.timestamp.split(" ")[1].slice(0, 5)]
+    ];
+    document.getElementById(elId).innerHTML = rows.map(r =>
+      `<div class="tx-line"><span>${r[0]}</span><span>${r[1]}</span></div>`).join("");
+  }
+
+  function isVoice(sig) { return String(sig.code || "").indexOf("voice") === 0; }
+
+  // ---------------- capability check ----------------
+  let asrAvailable = false;
+  (async function () {
+    try {
+      const res = await fetch("/capabilities");
+      const caps = await res.json();
+      const asr = (caps && caps.transcription) || {};
+      asrAvailable = !!asr.available;
+      document.getElementById("asrBadge").textContent =
+        asrAvailable ? ("Whisper " + (asr.model || "") + " ready") : "Text mode";
+    } catch (e) {
+      document.getElementById("asrBadge").textContent = "Text mode";
+    }
+  })();
+
+  // ================= COUNTERFACTUAL =================
+  async function loadCounterfactual() {
+    renderTx("txA", DEMO_TX);
+    renderTx("txB", DEMO_TX);
+
+    try {
+      // Identical transaction, scored twice — the ONLY difference is the transcript.
+      const [a, b] = await Promise.all([
+        callAssess(DEMO_TX, ""),
+        callAssess(DEMO_TX, SCAM_TRANSCRIPT)
+      ]);
+
+      // --- Scenario A ---
+      document.getElementById("scoresA").innerHTML = `
+        <div class="sc-line"><span>Transaction risk</span><span>${a.payment_score}</span></div>
+        <div class="sc-line"><span>Voice risk</span><span>none</span></div>
+        <div class="sc-line big"><span>Combined</span><span>${a.score}/100</span></div>`;
+      const va = VERDICT_TEXT[a.decision] || VERDICT_TEXT.WARN;
+      const vaEl = document.getElementById("verdictA");
+      vaEl.className = "cf-verdict vd-" + a.decision;
+      vaEl.innerHTML = va.label + `<div class="vd-sub">${va.sub}</div>`;
+
+      // --- Scenario B ---
+      const weighted = Math.trunc((b.voice_score || 0) * 0.6);
+      document.getElementById("scoresB").innerHTML = `
+        <div class="sc-line"><span>Transaction risk</span><span>${b.payment_score}</span></div>
+        <div class="sc-line"><span>Voice risk</span><span>${b.voice_score} → ${weighted} weighted</span></div>
+        <div class="sc-line big"><span>Combined</span><span>${b.score}/100</span></div>`;
+      const vb = VERDICT_TEXT[b.decision] || VERDICT_TEXT.WARN;
+      const vbEl = document.getElementById("verdictB");
+      vbEl.className = "cf-verdict vd-" + b.decision;
+      vbEl.innerHTML = vb.label + `<div class="vd-sub">${vb.sub}</div>`;
+
+      const flags = (b.signals || []).filter(isVoice).length;
+      document.getElementById("ctxB").textContent =
+        "Scam call in progress — " + flags + " coercion pattern" + (flags === 1 ? "" : "s") + " detected";
+
+      document.getElementById("punchSub").textContent =
+        `Transaction risk stayed at ${a.payment_score} in both cases. The combined score moved ` +
+        `${a.score} → ${b.score}, and the decision moved ${a.decision} → ${b.decision}, ` +
+        `purely because of what was being said on the call.`;
+
+    } catch (e) {
+      showError("cfError", "Couldn't load the comparison: " + e.message +
+                ". Check that the server is running.");
+    }
+  }
+  loadCounterfactual();
+
+  // ================= LIVE ATTACK SIMULATION =================
+  let simResult = null;
+
+  function setStep(id, state) {
+    const el = document.getElementById(id);
+    el.className = "step " + state;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  async function runSimulation() {
+    const btn = document.getElementById("simBtn");
+    btn.disabled = true;
+    btn.textContent = "Simulation running…";
+    document.getElementById("steps").style.display = "block";
+    document.getElementById("simError").style.display = "none";
+    document.getElementById("s7chosen").style.display = "none";
+    ["s1","s2","s3","s4","s5","s6","s7"].forEach(id =>
+      document.getElementById(id).className = "step");
+
+    try {
+      // ---- STEP 1: incoming call ----
+      setStep("s1", "active");
+      await sleep(1800);
+      setStep("s1", "done");
+
+      // ---- STEP 2: audio -> transcript (real Whisper when available) ----
+      setStep("s2", "active");
+      const st = document.getElementById("s2status");
+      let transcript = SCAM_TRANSCRIPT;
+      let usedWhisper = false;
+
+      if (asrAvailable) {
+        st.textContent = "Capturing call audio…";
+        await sleep(700);
+        try {
+          const audioRes = await fetch(DEMO_AUDIO_URL);
+          if (!audioRes.ok) throw new Error("demo audio missing");
+          const blob = await audioRes.blob();
+
+          st.textContent = "Transcribing with Whisper…";
+          const form = new FormData();
+          form.append("audio", blob, "scamcall.wav");
+          const tr = await fetch("/transcribe", { method: "POST", body: form });
+          const data = await tr.json();
+
+          if (data && data.ok && data.transcript) {
+            transcript = data.transcript;
+            usedWhisper = true;
+            st.textContent = "Transcribed " + data.audio_seconds + "s of audio in " +
+                             data.transcribe_ms + " ms (Whisper " + data.model + ")";
+          } else {
+            throw new Error(data.error || "no transcript");
+          }
+        } catch (e) {
+          // Fall back silently to the scripted transcript — the demo must not stall.
+          st.textContent = "Call transcript ready";
+        }
+      } else {
+        st.textContent = "Call transcript ready";
+        await sleep(900);
+      }
+
+      const tbox = document.getElementById("s2transcript");
+      tbox.textContent = transcript;
+      tbox.style.display = "block";
+      await sleep(1200);
+      setStep("s2", "done");
+
+      // ---- Score once; every later step reads from this response ----
+      const result = await callAssess(DEMO_TX, transcript);
+      simResult = result;
+
+      const voiceSignals = (result.signals || []).filter(isVoice);
+      const txnSignals = (result.signals || []).filter(s => !isVoice(s));
+
+      // ---- STEP 3: voice analysis ----
+      setStep("s3", "active");
+      const s3f = document.getElementById("s3flags");
+      s3f.innerHTML = "";
+      for (const sig of voiceSignals) {
+        const d = document.createElement("div");
+        d.className = "flag";
+        const name = (sig.label || sig.code).replace(/^Call red flag — /, "");
+        d.innerHTML = name + ' <span class="pts">+' + sig.points + "</span>";
+        s3f.appendChild(d);
+        await sleep(430);
+      }
+      document.getElementById("s3bar").style.width = Math.min(100, result.voice_score) + "%";
+      document.getElementById("s3num").textContent = result.voice_score + "/100";
+      await sleep(900);
+      setStep("s3", "done");
+
+      // ---- STEP 4: the payment attempt ----
+      setStep("s4", "active");
+      renderTx("s4tx", DEMO_TX);
+      await sleep(1500);
+      setStep("s4", "done");
+
+      // ---- STEP 5: transaction analysis ----
+      setStep("s5", "active");
+      const s5f = document.getElementById("s5flags");
+      s5f.innerHTML = "";
+      if (!txnSignals.length) {
+        s5f.innerHTML = '<div class="flag" style="color:var(--success)">Nothing unusual in the payment on its own</div>';
+      }
+      for (const sig of txnSignals) {
+        const d = document.createElement("div");
+        d.className = "flag";
+        d.innerHTML = (sig.label || sig.code) + ' <span class="pts">+' + sig.points + "</span>";
+        s5f.appendChild(d);
+        await sleep(430);
+      }
+      document.getElementById("s5bar").style.width = Math.min(100, result.payment_score) + "%";
+      document.getElementById("s5num").textContent = result.payment_score + "/100";
+      await sleep(900);
+      setStep("s5", "done");
+
+      // ---- STEP 6: fusion ----
+      setStep("s6", "active");
+      const weighted = Math.trunc((result.voice_score || 0) * 0.6);
+      document.getElementById("f1").textContent = result.payment_score;
+      await sleep(500);
+      document.getElementById("f2").textContent =
+        weighted + "   (" + result.voice_score + " × 0.6)";
+      await sleep(500);
+      document.getElementById("f3").textContent = result.score + " / 100";
+      document.getElementById("s6bar").style.width = result.score + "%";
+      document.getElementById("s6num").textContent = result.score + "/100";
+      await sleep(1300);
+      setStep("s6", "done");
+
+      // ---- STEP 7: explainable alert + human choice ----
+      setStep("s7", "active");
+      const vt = VERDICT_TEXT[result.decision] || VERDICT_TEXT.WARN;
+      document.getElementById("s7title").textContent = vt.label.replace(/^..\s/, "");
+      const names = voiceSignals.map(s =>
+        (s.label || "").replace(/^Call red flag — /, "").toLowerCase()).filter(Boolean);
+      document.getElementById("s7why").textContent =
+        "This payment was attempted during a call showing " +
+        (names.length ? names.join(", ") : "no coercion signals") +
+        ". The payment alone scored " + result.payment_score +
+        "; combined with the call it reached " + result.score +
+        ". The payment is held for your confirmation — it has not been blocked." +
+        (usedWhisper ? " Transcript produced by Whisper from real audio." : "");
+
+      btn.disabled = false;
+      btn.textContent = "Run simulation again";
+
+    } catch (e) {
+      showError("simError", "Simulation stopped: " + e.message +
+                ". Check that the server is running, then try again.");
+      btn.disabled = false;
+      btn.textContent = "Simulate Fraud Attack";
+    }
+  }
+
+  // The override records through the same audit endpoint the main app uses,
+  // so a simulated decision shows up in the bank review console like any other.
+  async function simChoice(action) {
+    if (!simResult) return;
+    try {
+      await fetch("/decision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: DEMO_TX.user_id,
+          amount: DEMO_TX.amount,
+          payee: DEMO_TX.payee,
+          decision: simResult.decision,
+          score: simResult.score,
+          user_action: action,
+          confidence: (simResult.confidence && simResult.confidence.level) || "",
+          signal_count: (simResult.signals || []).length
+        })
+      });
+      const el = document.getElementById("s7chosen");
+      el.textContent = action === "CANCELLED"
+        ? "Payment cancelled — decision recorded in the audit log"
+        : "Payment confirmed by the user — logged as an override for bank review";
+      el.style.display = "block";
+      document.getElementById("s7").className = "step done";
+    } catch (e) {
+      showError("simError", "Couldn't record that decision: " + e.message);
+    }
+  }
+</script>
+</body>
+</html>
